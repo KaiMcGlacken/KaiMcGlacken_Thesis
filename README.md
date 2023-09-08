@@ -18,7 +18,7 @@ eco_to_fen()
 The following functions were used to convert pgn games to matrices: 
 format_board_position() position_to_index() pgn_to_list() convert_game_to_matrix()
 
-The following functions were used for traininf and testing the convolutional neural network: 
+The following functions were used for training and testing the convolutional neural network: 
 format_and_label_games() train_cnn_with_stats() train_cnn_no_stats()
 
 The following function was used for calculating the average error and coincidence values: 
