@@ -6,7 +6,8 @@ from methods import (pgn_to_list,
                      calculate_ae_and_cv,
                      format_and_label_games,
                      train_cnn_with_stats,
-                     train_cnn_no_stats)
+                     train_cnn_no_stats,
+                     train_test_lr)
 import pprint as pp
 from io import StringIO
 import pandas as pd
@@ -24,9 +25,7 @@ def main():
     
     print('Running Program...')
     
-    randomised_games, randomised_game_data, randomised_labels = format_and_label_games()
-    
-    train_cnn_no_stats(randomised_games, randomised_labels)
+    train_test_lr()
             
     
     print('##########')
