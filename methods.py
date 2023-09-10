@@ -17,6 +17,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 import pickle
 import numpy as np
+import math
 
 
 # function for calculating the ae and cv of each move in each game
@@ -593,7 +594,7 @@ def train_cnn_with_stats(games, game_data, labels):
     Z = tf.keras.layers.Dense(64, activation='relu')(stats_input)
     Z = tf.keras.layers.Dense(128, activation='relu')(Z)
     
-    # combine pathways
+    # combine output of each layers
     combined = tf.keras.layers.concatenate([X, Z])
     combined = tf.keras.layers.Dropout(0.5)(combined)
     
@@ -808,29 +809,40 @@ def train_cnn_no_stats(games, labels):
     
     
 
-# pass games with no cheating and games where either white cheats or black cheats
-def train_test_lr(df_no_cheats_games, df_black_cheats_games):
+def train_test_lr():
+    
+    # write pickle files to dataframes
+    with open('final_50_move_games.pkl', 'rb') as f:
+        df_no_cheats_games = pickle.load(f)
+        
+    with open('final_white_cheats.pkl', 'rb') as f:
+        df_white_cheats_games = pickle.load(f)
+        
+    with open('final_black_cheats.pkl', 'rb') as f:
+        df_black_cheats_games = pickle.load(f)
     
     df_no_cheats_games['cheated'] = 0
-    df_black_cheats_games['cheated'] = 1
+    df_white_cheats_games['cheated'] = 1 # change if testing black cheat games
 
     df_all_games = pd.concat([df_no_cheats_games, 
-                              df_black_cheats_games], #change if passing games where white cheats
+                              df_white_cheats_games], #change if passing games where black cheats
                              axis=0) 
     df_all_games = df_all_games.reset_index(drop=True)
     
+
+    
     # get only the cv scores
-    X_games = df_all_games[['black_cv']] # change 'black_cv' depending on what engine evaluation you are using
+    X_games = df_all_games[['white_cv']] # change 'black_cv' depending on what engine evaluation you are using
     y_labels = df_all_games.cheated
     
     model = LogisticRegression()
     
     model.fit(X_games, y_labels)
     
-    probabilty_threshold= 0.5  
-    
     # find where logistic regression curve and y = 0.5 intercept
-    cv_threshold = (np.log(1 / probabilty_threshold - 1) - model.intercept_) / model.coef_
+    cv_threshold = -1 *((math.log(.5/(1-.5)) + model.intercept_)/model.coef_)
+    
+    
     print(cv_threshold)
 
     # stratified 5 Fold cross-validation
@@ -846,8 +858,8 @@ def train_test_lr(df_no_cheats_games, df_black_cheats_games):
     for i, j in stratified_5_fold.split(X_games, y_labels):
         
         # split data into training and testing sets
-        X_training_data, X_testing_data = X_games[i], y_labels[j]
-        y_training_labels, y_testing_labels = X_games[i], y_labels[j]
+        X_training_data, X_testing_data = X_games.iloc[i], X_games.iloc[j]
+        y_training_labels, y_testing_labels = y_labels.iloc[i], y_labels.iloc[j]
 
         # create model
         model = LogisticRegression()
@@ -873,8 +885,15 @@ def train_test_lr(df_no_cheats_games, df_black_cheats_games):
         print('recall: '+ str(recall))
         print('f1-Score: '+ str(f1))
     
+    # find average evaluation metrics across all folds
+    accuracy_mean = sum(accuracy_list) / len(accuracy_list)
+    precision_mean = sum(precision_list) / len(precision_list)
+    recall_mean = sum(recall_list) / len(recall_list)
+    f1_mean = sum(f1_list) / len(f1_list)
 
-
-    
-    
-    
+    # print average evaluation metrics
+    print('average evaluation metrics:')
+    print('average accuracy: ' + str(accuracy_mean))
+    print('average precision: '+ str(precision_mean))
+    print('average recall: '+ str(recall_mean))
+    print('average f1-score: '+ str(f1_mean))
